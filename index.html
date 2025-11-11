@@ -1,153 +1,81 @@
-// Wait for the page to load before running scripts
-document.addEventListener('DOMContentLoaded', () => {
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AeroBuilder ✈️</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-    // --- 1. Get all the HTML elements we need ---
-    const sliders = document.querySelectorAll('input[type="range"]');
-    const pointsRemainingEl = document.getElementById('points-remaining');
-    const testFlightBtn = document.getElementById('test-flight-btn');
-    const flightReportEl = document.getElementById('flight-report');
-    
-    // NEW: Mission selector
-    const missionSelectEl = document.getElementById('mission-select');
+    <header>
+        <h1>✈️ AeroBuilder: Design Your Plane</h1>
+    </header>
 
-    // Get value display elements
-    const wingsValEl = document.getElementById('wings-val');
-    const engineValEl = document.getElementById('engine-val');
-    const fuelValEl = document.getElementById('fuel-val');
-    const bodyValEl = document.getElementById('body-val');
-
-    const TOTAL_POINTS = 100;
-
-    // --- 2. Update Points Function ---
-    function updatePoints() {
-        // Get the current value of all sliders
-        let pointsUsed = 0;
-        sliders.forEach(slider => {
-            pointsUsed += parseInt(slider.value);
-        });
-
-        const pointsLeft = TOTAL_POINTS - pointsUsed;
-        pointsRemainingEl.textContent = pointsLeft;
-
-        // Update individual value spans
-        wingsValEl.textContent = document.getElementById('wings').value;
-        engineValEl.textContent = document.getElementById('engine').value;
-        fuelValEl.textContent = document.getElementById('fuel').value;
-        bodyValEl.textContent = document.getElementById('body').value;
-
-        // Check if user has gone over or under the limit
-        if (pointsLeft < 0) {
-            pointsRemainingEl.style.color = 'red';
-            testFlightBtn.disabled = true; // Disable button if over budget
-            testFlightBtn.textContent = "You are over budget!";
-        } else {
-            pointsRemainingEl.style.color = '#333';
-            testFlightBtn.disabled = false;
-            testFlightBtn.textContent = "Test Flight!";
-        }
-    }
-
-    // --- 3. Add Event Listeners to Sliders ---
-    // When any slider moves, run the updatePoints function
-    sliders.forEach(slider => {
-        slider.addEventListener('input', updatePoints);
-    });
-
-    // --- 4. Test Flight Logic (HEAVILY UPDATED) ---
-    testFlightBtn.addEventListener('click', () => {
-        // Get final values
-        const wings = parseInt(document.getElementById('wings').value);
-        const engine = parseInt(document.getElementById('engine').value);
-        const fuel = parseInt(document.getElementById('fuel').value);
-        const body = parseInt(document.getElementById('body').value);
-        
-        // Get the selected mission
-        const selectedMission = missionSelectEl.value;
-
-        // --- Simple Physics Simulation ---
-        let lift = wings * 1.5;
-        let thrust = engine * 1.5;
-        let weight = (engine * 0.5) + (fuel * 0.8) + (body * 0.5) + (wings * 0.2);
-        let drag = (wings * 0.5) + (body * 0.5);
-        let fuelBurn = engine * 0.1; // Lower is better
-        
-        // --- Performance Stats (calculated only if flight is possible) ---
-        let speed = (thrust - drag) * 5;
-        let range = (fuelBurn > 0) ? (fuel / fuelBurn * 100) : 0; // Avoid divide by zero
-        let strength = (body - (weight * 0.1));
-        let isSturdy = (strength >= 10);
-
-        // --- Generate Flight Report ---
-        let report = ""; // Start with an empty report
-        let flightSucceeded = false;
-
-        // Check 1: Takeoff (Lift vs Weight)
-        if (lift < weight) {
-            report += '<p class="report-fail">FLIGHT FAILURE!</p>';
-            report += '<p>Your plane is too heavy for its wings! It could not get off the ground.</p>';
-        }
-        // Check 2: Stall (Thrust vs Drag)
-        else if (thrust < drag) {
-            report += '<p class="report-fail">FLIGHT FAILURE!</p>';
-            report += '<p>Your engines are too weak! The plane stalled and crashed due to excessive drag.</p>';
-        }
-        // Check 3: Success!
-        else {
-            flightSucceeded = true;
-            report += '<p class="report-success">FLIGHT SUCCESS!</p>';
-            report += `<p>Your design is airworthy. Here are the flight stats:</p>`;
-            report += '<ul>';
-            report += `<li><strong>Max Speed:</strong> ${speed.toFixed(0)} mph</li>`;
-            report += `<li><strong>Max Range:</strong> ${range.toFixed(0)} miles</li>`;
-            report += `<li><strong>Airframe:</strong> ${isSturdy ? 'Sturdy' : 'Flimsy'}</li>`;
-            report += '</ul>';
-        }
-
-        // --- Check Mission Status (Only if flight succeeded) ---
-        if (flightSucceeded && selectedMission !== 'none') {
-            let missionReport = "";
-            let missionSuccess = false;
-
-            switch (selectedMission) {
-                case 'short-hauler':
-                    if (range >= 500) missionSuccess = true;
-                    missionReport = missionSuccess ? 
-                        `MISSION SUCCESS: You met the 500-mile range goal!` :
-                        `MISSION FAILED: Your range was only ${range.toFixed(0)} miles.`;
-                    break;
-                case 'long-hauler':
-                    if (range >= 3000) missionSuccess = true;
-                    missionReport = missionSuccess ? 
-                        `MISSION SUCCESS: You met the 3,000-mile range goal!` :
-                        `MISSION FAILED: Your range was only ${range.toFixed(0)} miles.`;
-                    break;
-                case 'speed-demon':
-                    if (speed >= 500) missionSuccess = true;
-                    missionReport = missionSuccess ? 
-                        `MISSION SUCCESS: You met the 500 mph speed goal!` :
-                        `MISSION FAILED: Your speed was only ${speed.toFixed(0)} mph.`;
-                    break;
-                case 'heavy-lifter':
-                    if (isSturdy) missionSuccess = true;
-                    missionReport = missionSuccess ? 
-                        `MISSION SUCCESS: Your airframe was Sturdy!` :
-                        `MISSION FAILED: Your airframe was Flimsy.`;
-                    break;
-            }
+    <main>
+        <div class="designer-container">
+            <h2>Design Hangar</h2>
             
-            // Add mission report to the main report
-            if (missionSuccess) {
-                report += `<p class="mission-success">${missionReport}</p>`;
-            } else {
-                report += `<p class="mission-fail">${missionReport}</p>`;
-            }
-        }
-        
-        // Display the final report
-        flightReportEl.innerHTML = report;
-    });
+            <div class="mission-container">
+                <label for="mission-select"><strong>Current Mission:</strong></label>
+                <select id="mission-select">
+                    <option value="none">Free Build (No Mission)</option>
+                    <option value="short-hauler">Short Hauler (Range: 500+)</option>
+                    <option value="long-hauler">Long Hauler (Range: 3000+)</option>
+                    <option value="speed-demon">Speed Demon (Speed: 500+)</option>
+                    <option value="heavy-lifter">Heavy Lifter (Must be Sturdy)</option>
+                </select>
+            </div>
+            
+            <div class="stats-display">
+                <strong>Build Points Remaining: <span id="points-remaining">100</span></strong>
+            </div>
 
-    // --- 5. Initial Call ---
-    // Run updatePoints once on page load to set initial values
-    updatePoints();
-});
+            <div class="cost-key">
+                <h3>Part Costs (per unit)</h3>
+                <ul>
+                    <li><strong>Wings:</strong> <span id="cost-wings">1.0</span> pts</li>
+                    <li><strong>Engine:</strong> <span id="cost-engine">1.5</span> pts</li>
+                    <li><strong>Fuel:</strong> <span id="cost-fuel">0.8</span> pts</li>
+                    <li><strong>Fuselage:</strong> <span id="cost-body">0.7</span> pts</li>
+                </ul>
+            </div>
+
+            <div class="slider-group">
+                <label for="wings">Wing Size (Lift / Drag)</label>
+                <input type="range" id="wings" name="wings" min="10" max="50" value="25">
+                <span id="wings-val">25</span>
+            </div>
+
+            <div class="slider-group">
+                <label for="engine">Engine Power (Thrust / Weight)</label>
+                <input type="range" id="engine" name="engine" min="10" max="50" value="25">
+                <span id="engine-val">25</span>
+            </div>
+
+            <div class="slider-group">
+                <label for="fuel">Fuel Capacity (Range / Weight)</label>
+                <input type="range" id="fuel" name="fuel" min="10" max="50" value="25">
+                <span id="fuel-val">25</span>
+            </div>
+
+            <div class="slider-group">
+                <label for="body">Fuselage (Strength / Weight)</label>
+                <input type="range" id="body" name="body" min="10" max="50" value="25">
+                <span id="body-val">25</span>
+            </div>
+
+            <button id="test-flight-btn">Test Flight!</button>
+        </div>
+
+        <div class="results-container">
+            <h2>Flight Report</h2>
+            <div id="flight-report">
+                <p>Design your plane, select a mission, and press "Test Flight" to see the results.</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
