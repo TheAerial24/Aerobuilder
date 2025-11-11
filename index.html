@@ -3,79 +3,687 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AeroBuilder ✈️</title>
-    <link rel="stylesheet" href="style.css">
+    <title>2D Orbital Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: #00001a;
+            color: #0f0;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        canvas {
+            background-color: #00000a;
+            display: block;
+            border: 2px solid #0f0;
+            border-radius: 8px;
+            box-shadow: 0 0 20px #0f0;
+            cursor: grab;
+        }
+        #ui-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .control-panel, .info-panel {
+            background-color: rgba(0, 30, 0, 0.8);
+            border: 2px solid #0f0;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 0 10px #0f0;
+            width: 250px;
+        }
+        .info-panel {
+            font-size: 0.9rem;
+        }
+        .info-panel p {
+            margin: 4px 0;
+        }
+        button {
+            font-family: 'Orbitron', sans-serif;
+            background-color: #0a0;
+            color: #000;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            box-shadow: 0 0 5px #0a0;
+            margin: 5px;
+        }
+        button:hover:not(:disabled) {
+            background-color: #0f0;
+            color: #000;
+            box-shadow: 0 0 15px #0f0;
+        }
+        button:disabled {
+            background-color: #555;
+            color: #aaa;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        h2 {
+            font-size: 1.2rem;
+            margin-top: 0;
+            margin-bottom: 10px;
+            text-shadow: 0 0 5px #0f0;
+        }
+        #message-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 50, 0, 0.9);
+            border: 2px solid #0f0;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px #0f0;
+            text-align: center;
+            z-index: 100;
+            display: none;
+            width: 300px;
+        }
+        #message-box p {
+            margin-bottom: 15px;
+        }
+    </style>
 </head>
 <body>
 
-    <header>
-        <h1>✈️ AeroBuilder: Design Your Plane</h1>
-    </header>
+    <canvas id="gameCanvas" tabindex="0"></canvas>
 
-    <main>
-        <div class="designer-container">
-            <h2>Design Hangar</h2>
-            
-            <div class="mission-container">
-                <label for="mission-select"><strong>Current Mission:</strong></label>
-                <select id="mission-select">
-                    <option value="none">Free Build (No Mission)</option>
-                    <option value="short-hauler">Short Hauler (Range: 500+)</option>
-                    <option value="long-hauler">Long Hauler (Range: 3000+)</option>
-                    <option value="speed-demon">Speed Demon (Speed: 500+)</option>
-                    <option value="heavy-lifter">Heavy Lifter (Must be Sturdy)</option>
-                </select>
-            </div>
-            
-            <div class="stats-display">
-                <strong>Build Points Remaining: <span id="points-remaining">100</span></strong>
-            </div>
-
-            <div class="cost-key">
-                <h3>Part Costs (per unit)</h3>
-                <ul>
-                    <li><strong>Wings:</strong> <span id="cost-wings">1.0</span> pts</li>
-                    <li><strong>Engine:</strong> <span id="cost-engine">1.5</span> pts</li>
-                    <li><strong>Fuel:</strong> <span id="cost-fuel">0.8</span> pts</li>
-                    <li><strong>Fuselage:</strong> <span id="cost-body">0.7</span> pts</li>
-                </ul>
-            </div>
-
-            <div class="slider-group">
-                <label for="wings">Wing Size (Lift / Drag)</label>
-                <input type="range" id="wings" name="wings" min="10" max="50" value="25">
-                <span id="wings-val">25</span>
-            </div>
-
-            <div class="slider-group">
-                <label for="engine">Engine Power (Thrust / Weight)</label>
-                <input type="range" id="engine" name="engine" min="10" max="50" value="25">
-                <span id="engine-val">25</span>
-            </div>
-
-            <div class="slider-group">
-                <label for="fuel">Fuel Capacity (Range / Weight)</label>
-                <input type="range" id="fuel" name="fuel" min="10" max="50" value="25">
-                <span id="fuel-val">25</span>
-            </div>
-
-            <div class="slider-group">
-                <label for="body">Fuselage (Strength / Weight)</label>
-                <input type="range" id="body" name="body" min="10" max="50" value="25">
-                <span id="body-val">25</span>
-            </div>
-
-            <button id="test-flight-btn">Test Flight!</button>
+    <div id="ui-container">
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <h2>CONTROLS</h2>
+            <button id="launchButton">LAUNCH</button>
+            <button id="throttleUpButton" disabled>THROTTLE UP</button>
+            <button id="throttleDownButton" disabled>THROTTLE DOWN</button>
+            <button id="rotateRightButton" disabled>ROTATE RIGHT</button>
+            <button id="rotateLeftButton" disabled>ROTATE LEFT</button>
+            <button id="resetButton">RESET</button>
         </div>
 
-        <div class="results-container">
-            <h2>Flight Report</h2>
-            <div id="flight-report">
-                <p>Design your plane, select a mission, and press "Test Flight" to see the results.</p>
-            </div>
+        <!-- Info Panel -->
+        <div class="info-panel">
+            <h2>FLIGHT DATA</h2>
+            <p>Altitude: <span id="altitude">N/A</span> km</p>
+            <p>Speed: <span id="speed">N/A</span> m/s</p>
+            <p>Apoapsis: <span id="apoapsis">N/A</span> km</p>
+            <p>Periapsis: <span id="periapsis">N/A</span> km</p>
+            <p>Status: <span id="status">On Pad</span></p>
         </div>
-    </main>
 
-    <script src="script.js"></script>
+        <!-- Instructions Panel -->
+        <div class="info-panel">
+            <h2>HOW TO</h2>
+            <p>Camera follows ship</p>
+            <p>Wheel/Keys: Zoom [+/-]</p>
+            <p>Throttle: Hold [↑] or Button</p>
+            <p>Cut Throttle: [↓] or Button</p>
+            <p>Rotate: [←] / [→] or Buttons</p>
+        </div>
+    </div>
+
+    <!-- Custom Message Box -->
+    <div id="message-box">
+        <p id="message-text"></p>
+        <button id="message-ok">OK</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // Set canvas size to fit window
+            canvas.width = window.innerWidth * 0.95;
+            canvas.height = window.innerHeight * 0.95;
+
+            // UI Elements
+            const launchButton = document.getElementById('launchButton');
+            const throttleUpButton = document.getElementById('throttleUpButton');
+            const throttleDownButton = document.getElementById('throttleDownButton');
+            const rotateRightButton = document.getElementById('rotateRightButton');
+            const rotateLeftButton = document.getElementById('rotateLeftButton');
+            const resetButton = document.getElementById('resetButton');
+            
+            const altitudeEl = document.getElementById('altitude');
+            const speedEl = document.getElementById('speed');
+            const apoapsisEl = document.getElementById('apoapsis');
+            const periapsisEl = document.getElementById('periapsis');
+            const statusEl = document.getElementById('status');
+            
+            const messageBox = document.getElementById('message-box');
+            const messageText = document.getElementById('message-text');
+            const messageOk = document.getElementById('message-ok');
+
+            // --- Game State ---
+            let ship = {};
+            let planet = {};
+            let trajectory = [];
+            let simulationRunning = false;
+            let gamePaused = false;
+            const G = 6.674e-11; // Gravitational constant
+            const dt = 1; // Time step in seconds (for physics)
+
+            // --- Scaled Constants ---
+            // We scale everything down for playability
+            const scale = 1e-4; // 1 pixel = 1 / scale meters = 10km
+            const planetRadiusMeters = 6371e3; // Earth radius
+            const planetMass = 5.972e24; // Earth mass
+            const shipMass = 1000; // Ship mass (kg)
+            const thrustForce = 20000; // Newtons
+            
+            // --- FIX 1: Corrected G_scaled ---
+            // It no longer includes shipMass or dt, and scale is cubed
+            const G_scaled = G * planetMass * (scale**3); // Pre-calculate for a_scaled = G_scaled / r^2
+
+            // --- Camera ---
+            // camera.x/y is the world coordinate the camera is centered on
+            let camera = {
+                x: 0,
+                y: 0,
+                zoom: 0.1
+            };
+
+            // --- Mouse controls for zooming ---
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomIntensity = 0.1;
+                const wheel = e.deltaY < 0 ? 1 : -1;
+                const zoomFactor = Math.exp(wheel * zoomIntensity);
+
+                // Just zoom on the center (which is the ship)
+                camera.zoom *= zoomFactor;
+                camera.zoom = Math.max(0.01, Math.min(camera.zoom, 10)); // Clamp zoom
+            });
+
+            // --- Click to focus ---
+            // This is the FIX: Click the canvas to make sure it's "active" for keyboard input
+            canvas.addEventListener('click', () => {
+                canvas.focus();
+            });
+
+            // --- Coordinate Transformation ---
+            // New simpler logic: camera.x/y is the world coordinate at the center of the screen
+            function worldToScreen(worldX, worldY) {
+                const screenX = (worldX - camera.x) * camera.zoom + canvas.width / 2;
+                const screenY = (worldY - camera.y) * camera.zoom + canvas.height / 2;
+                return { x: screenX, y: screenY };
+            }
+
+            function screenToWorld(screenX, screenY) {
+                const worldX = (screenX - canvas.width / 2) / camera.zoom + camera.x;
+                const worldY = (screenY - canvas.height / 2) / camera.zoom + camera.y;
+                return { x: worldX, y: worldY };
+            }
+            
+            // --- Show Message Box ---
+            function showMessage(text) {
+                messageText.textContent = text;
+                messageBox.style.display = 'block';
+                gamePaused = true;
+            }
+            
+            messageOk.addEventListener('click', () => {
+                messageBox.style.display = 'none';
+                gamePaused = false;
+                if (!simulationRunning) {
+                    resetSimulation();
+                }
+            });
+
+            // --- Game Functions ---
+            function init() {
+                planet = {
+                    x: 0, // Planet is at world origin
+                    y: 0,
+                    radius: planetRadiusMeters * scale, // Scaled radius
+                    mass: planetMass
+                };
+                
+                resetSimulation();
+                
+                // Set initial camera
+                camera.x = ship.x;
+                camera.y = ship.y;
+                camera.zoom = 0.1; // Zoomed out
+            }
+
+            function resetSimulation() {
+                ship = {
+                    x: planet.x,
+                    y: planet.y - planet.radius - 1, // Start 1px (10km) above surface
+                    vx: 0,
+                    vy: 0,
+                    mass: shipMass,
+                    angle: -Math.PI / 2, // Pointing "up"
+                    isThrottling: false
+                };
+                trajectory = [];
+                simulationRunning = false;
+
+                // Reset camera to ship on pad
+                camera.x = ship.x;
+                camera.y = ship.y;
+                camera.zoom = 0.1;
+                
+                // Update UI
+                launchButton.disabled = false;
+                throttleUpButton.disabled = true;
+                throttleDownButton.disabled = true;
+                rotateRightButton.disabled = true;
+                rotateLeftButton.disabled = true;
+                statusEl.textContent = "On Pad";
+                updateUI();
+            }
+
+            function launch() {
+                if (simulationRunning) return;
+                ship.vy = 0; // Initial vertical velocity
+                simulationRunning = true;
+                
+                // Update UI
+                launchButton.disabled = true;
+                throttleUpButton.disabled = false;
+                throttleDownButton.disabled = false;
+                rotateRightButton.disabled = false;
+                rotateLeftButton.disabled = false;
+                statusEl.textContent = "In Flight";
+            }
+
+            function rotateShip(direction) {
+                if (!simulationRunning) return;
+                // direction = 1 for right, -1 for left
+                ship.angle += direction * 0.05; // 0.05 radians per frame
+            }
+
+            function applyEngineThrust() {
+                if (!ship.isThrottling) return;
+
+                // --- FIX 2: Corrected Thrust Calculation ---
+                // Original: const thrustMag = (thrustForce / ship.mass) * dt * dt * 1000; // Scaled thrust
+                
+                // Corrected:
+                const realThrustAccel = thrustForce / ship.mass; // a = F/m (20 m/s^2)
+                const scaledThrustAccel = realThrustAccel * scale; // a_scaled = a_real * scale (0.002)
+                const thrustMag = scaledThrustAccel * dt; // v_change = a_scaled * dt (0.002)
+                
+                // Apply thrust in the direction of the ship's angle
+                const thrustX = Math.cos(ship.angle) * thrustMag;
+                const thrustY = Math.sin(ship.angle) * thrustMag;
+                
+                ship.vx += thrustX;
+                ship.vy += thrustY;
+            }
+
+            // This is the single, corrected updatePhysics function
+            function updatePhysics() {
+                if (!simulationRunning || gamePaused) return;
+
+                // Apply thrust
+                applyEngineThrust();
+
+                // --- Gravity and movement ---
+                const dx = ship.x - planet.x;
+                const dy = ship.y - planet.y;
+                const distSq = dx * dx + dy * dy;
+                const dist = Math.sqrt(distSq);
+
+                // Check for crash
+                if (dist <= planet.radius) {
+                    simulationRunning = false;
+                    statusEl.textContent = "Crashed";
+                    showMessage("You have crashed into the planet!");
+                    return;
+                }
+                
+                // --- FIX 3: Corrected Escape Velocity Check ---
+                // Check for escape
+                const realDist = dist / scale;
+                // Original: const realSpeed = Math.sqrt(ship.vx*ship.vx + ship.vy*ship.vy) / (dt * scale * 100);
+                // Corrected:
+                const realSpeed = Math.sqrt(ship.vx*ship.vx + ship.vy*ship.vy) / scale / dt;
+                const escapeVel = Math.sqrt((2 * G * planet.mass) / realDist);
+                
+                if (realSpeed > escapeVel) { // Removed the * 3 leeway, be more accurate
+                    simulationRunning = false;
+                    statusEl.textContent = "Escaped";
+                    showMessage("You have escaped the planet's gravity!");
+                    return;
+                }
+
+                // Gravity
+                const force = G_scaled / distSq;
+                const ax = -force * (dx / dist);
+                const ay = -force * (dy / dist);
+
+                ship.vx += ax;
+                ship.vy += ay;
+
+                ship.x += ship.vx;
+                ship.y += ship.vy;
+
+                // Add to trajectory
+                trajectory.push({ x: ship.x, y: ship.y });
+                if (trajectory.length > 2000) {
+                    trajectory.shift();
+                }
+            }
+            
+            function calculateOrbit() {
+                if (!simulationRunning) {
+                    apoapsisEl.textContent = "N/A";
+                    periapsisEl.textContent = "N/A";
+                    return;
+                }
+                
+                const r_vec = { x: ship.x - planet.x, y: ship.y - planet.y };
+                const v_vec = { x: ship.vx, y: ship.vy }; // These are scaled velocities
+                
+                const r_mag = Math.sqrt(r_vec.x**2 + r_vec.y**2);
+                const v_mag = Math.sqrt(v_vec.x**2 + v_vec.y**2);
+
+                if (r_mag === 0) return; // Avoid division by zero
+
+                // Convert to real units
+                const r_real = r_mag / scale; // Real distance (m)
+                
+                // --- FIX 4: Corrected Real Velocity Calculation ---
+                // Original: const v_real = v_mag / (dt * scale * 100); 
+                // Corrected:
+                const v_real = (v_mag / scale) / dt; // v_real = (v_scaled / scale) / dt 
+
+                const mu = G * planet.mass; // Standard gravitational parameter
+                
+                const E = (v_real**2 / 2) - (mu / r_real); // Specific orbital energy
+                
+                if (E >= 0) {
+                    // Parabolic or hyperbolic orbit
+                    apoapsisEl.textContent = "∞";
+                    const r_p_real = (r_real * v_real**2 * Math.sin(Math.acos( (r_vec.x*v_vec.x + r_vec.y*v_vec.y) / (r_mag * v_mag) ))**2 / mu);
+                    periapsisEl.textContent = ((r_p_real - planetRadiusMeters) / 1000).toFixed(0);
+                    return;
+                }
+
+                const a = -mu / (2 * E); // Semi-major axis
+                
+                // Angular momentum
+                const h_mag_scaled = (r_vec.x * v_vec.y) - (r_vec.y * v_vec.x);
+                // Original: const h_real = Math.abs(h_mag_scaled) / (scale * dt * scale * 100); // Hacky real h
+                // Corrected: (v_real * r_real * sin(theta)) or just (h_scaled / (scale^2)) / dt
+                const h_real = Math.abs(h_mag_scaled) / (scale * scale) / dt;
+                
+                // Eccentricity
+                let e = Math.sqrt(1 + (2 * E * h_real**2) / (mu**2));
+                if (isNaN(e)) e = 0; // Fix for NaN on perfect circularization
+
+                const r_a = a * (1 + e); // Apoapsis radius
+                const r_p = a * (1 - e); // Periapsis radius
+                
+                const alt_a = r_a - (planetRadiusMeters);
+                const alt_p = r_p - (planetRadiusMeters);
+
+                apoapsisEl.textContent = (alt_a / 1000).toFixed(0);
+                periapsisEl.textContent = (alt_p / 1000).toFixed(0);
+            }
+
+            function updateUI() {
+                const dx = ship.x - planet.x;
+                const dy = ship.y - planet.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const altitude = (dist - planet.radius) * (1 / scale / 1000); // in km
+                
+                // --- FIX 5: Corrected Real Speed Display ---
+                const speed = Math.sqrt(ship.vx * ship.vx + ship.vy * ship.vy);
+                // Original: const realSpeed = speed * (1 / scale / dt) * 100; // in m/s (this is a guess)
+                // Corrected:
+                const realSpeed = (speed / scale) / dt; // in m/s
+
+                altitudeEl.textContent = altitude.toFixed(0);
+                speedEl.textContent = realSpeed.toFixed(0);
+                
+                if (simulationRunning) {
+                    calculateOrbit();
+                } else {
+                    apoapsisEl.textContent = "N/A";
+                    periapsisEl.textContent = "N/A";
+                }
+            }
+
+            function draw() {
+                // Clear canvas
+                ctx.fillStyle = '#00000a';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // --- Draw grid ---
+                ctx.strokeStyle = 'rgba(0, 255, 0, 0.1)';
+                ctx.lineWidth = 1;
+                
+                // Calculate visible world boundaries
+                const worldLeft = screenToWorld(0, 0).x;
+                const worldTop = screenToWorld(0, 0).y;
+                const worldRight = screenToWorld(canvas.width, canvas.height).x;
+                const worldBottom = screenToWorld(canvas.width, canvas.height).y;
+
+                // Offset for camera translation
+                const startX = Math.floor(worldLeft / 100) * 100;
+                const startY = Math.floor(worldTop / 100) * 100;
+
+                ctx.beginPath();
+                for (let x = startX; x < worldRight; x += 100) {
+                    const sx = (x - worldLeft) * camera.zoom;
+                    ctx.moveTo(sx, 0);
+                    ctx.lineTo(sx, canvas.height);
+                }
+                for (let y = startY; y < worldBottom; y += 100) {
+                    const sy = (y - worldTop) * camera.zoom;
+                    ctx.moveTo(0, sy);
+                    ctx.lineTo(canvas.width, sy);
+                }
+                ctx.stroke();
+
+
+                // --- Draw Trajectory ---
+                if (trajectory.length > 1) {
+                    ctx.strokeStyle = '#008800'; // Faint green
+                    ctx.lineWidth = 2; // Constant pixel width for trajectory
+                    ctx.beginPath();
+                    let screenPos = worldToScreen(trajectory[0].x, trajectory[0].y);
+                    ctx.moveTo(screenPos.x, screenPos.y);
+                    for (let i = 1; i < trajectory.length; i++) {
+                        screenPos = worldToScreen(trajectory[i].x, trajectory[i].y);
+                        ctx.lineTo(screenPos.x, screenPos.y);
+                    }
+                    ctx.stroke();
+                }
+
+                // --- Draw Planet ---
+                const planetScreenPos = worldToScreen(planet.x, planet.y);
+                const planetScreenRadius = planet.radius * camera.zoom;
+                
+                // Atmosphere
+                ctx.fillStyle = 'rgba(60, 120, 255, 0.2)'; // Lighter blue atmosphere
+                ctx.beginPath();
+                ctx.arc(planetScreenPos.x, planetScreenPos.y, planetScreenRadius + (10 * camera.zoom), 0, Math.PI * 2);
+                ctx.fill();
+
+                // Planet Body (Ocean)
+                ctx.fillStyle = '#0077be'; // Nice Earth Blue
+                ctx.beginPath();
+                ctx.arc(planetScreenPos.x, planetScreenPos.y, planetScreenRadius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // --- Draw Continents (Simple) ---
+                // We draw green circles, clipped by the planet's shape
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(planetScreenPos.x, planetScreenPos.y, planetScreenRadius, 0, Math.PI * 2);
+                ctx.clip(); // Clip to the planet's shape
+
+                // Draw some green patches
+                ctx.fillStyle = '#228B22'; // Forest Green
+                ctx.beginPath();
+                ctx.arc(planetScreenPos.x + planetScreenRadius * 0.2, planetScreenPos.y - planetScreenRadius * 0.3, planetScreenRadius * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(planetScreenPos.x - planetScreenRadius * 0.5, planetScreenPos.y - planetScreenRadius * 0.1, planetScreenRadius * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(planetScreenPos.x - planetScreenRadius * 0.2, planetScreenPos.y + planetScreenRadius * 0.5, planetScreenRadius * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw Ice Caps
+                ctx.fillStyle = '#ffffff'; // White
+                ctx.beginPath();
+                ctx.arc(planetScreenPos.x, planetScreenPos.y - planetScreenRadius * 0.9, planetScreenRadius * 0.2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(planetScreenPos.x, planetScreenPos.y + planetScreenRadius * 0.9, planetScreenRadius * 0.2, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore(); // Remove clipping
+                
+                // Planet Outline
+                ctx.strokeStyle = '#0f0';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+
+                // --- Draw Ship ---
+                const shipScreenPos = worldToScreen(ship.x, ship.y);
+
+                ctx.save();
+                ctx.translate(shipScreenPos.x, shipScreenPos.y);
+                // We add Math.PI / 2 because 0 radians is "right", but we want 0 to be "up" for the sprite
+                ctx.rotate(ship.angle + Math.PI / 2); 
+
+                // Draw flame if throttling (constant pixel size)
+                if (ship.isThrottling && simulationRunning) {
+                    ctx.fillStyle = '#f9a825'; // Orange/yellow
+                    ctx.beginPath();
+                    ctx.moveTo(-2, 4); // Base left
+                    ctx.lineTo(2, 4); // Base right
+                    ctx.lineTo(0, (6 + Math.random() * 2)); // Flickering tip
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                // Draw ship body (constant pixel size)
+                ctx.fillStyle = '#0f0'; // Bright green
+                ctx.beginPath();
+                ctx.moveTo(0, -5); // Nose
+                ctx.lineTo(-3, 3); // Left base
+                ctx.lineTo(3, 3); // Right base
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            function gameLoop() {
+                updatePhysics();
+                if (!gamePaused) {
+                    updateUI();
+                    
+                    // Update camera to follow ship
+                    if (simulationRunning) {
+                        camera.x = ship.x;
+                        camera.y = ship.y;
+                    }
+                }
+                draw();
+                requestAnimationFrame(gameLoop);
+            }
+
+            // --- Event Listeners ---
+            launchButton.addEventListener('click', launch);
+
+            // Button controls
+            throttleUpButton.addEventListener('mousedown', () => { if (simulationRunning) ship.isThrottling = true; });
+            throttleUpButton.addEventListener('mouseup', () => { ship.isThrottling = false; });
+            throttleUpButton.addEventListener('mouseleave', () => { ship.isThrottling = false; }); // Stop if mouse leaves button
+            throttleDownButton.addEventListener('click', () => { ship.isThrottling = false; });
+            rotateRightButton.addEventListener('click', () => rotateShip(1));
+            rotateLeftButton.addEventListener('click', () => rotateShip(-1));
+
+            resetButton.addEventListener('click', () => {
+                // if (simulationRunning) { // Allow reset anytime
+                    resetSimulation();
+                // }
+            });
+
+            // *** CHANGED: Attached listener to canvas, not document ***
+            canvas.addEventListener('keydown', (e) => {
+                
+                // --- Camera controls (zoom) ---
+                if (!gamePaused) {
+                    const zoomIntensity = 0.1;
+
+                    if (e.key === '=' || e.key === '+') {
+                        e.preventDefault();
+                        const zoom = Math.exp(1 * zoomIntensity);
+                        camera.zoom *= zoom;
+                    } else if (e.key === '-' || e.key === '_') {
+                        e.preventDefault();
+                        const zoom = Math.exp(-1 * zoomIntensity);
+                        camera.zoom *= zoom;
+                    }
+                    // Clamp zoom
+                    camera.zoom = Math.max(0.01, Math.min(camera.zoom, 10));
+                }
+
+                // --- Ship controls ---
+                if (!simulationRunning || gamePaused) return;
+
+                switch (e.key) {
+                    case "ArrowUp":
+                        e.preventDefault();
+                        ship.isThrottling = true;
+                        break;
+                    case "ArrowDown":
+                        e.preventDefault();
+                        ship.isThrottling = false;
+                        break;
+                    case "ArrowRight":
+                        e.preventDefault();
+                        rotateShip(1); // Rotate Right
+                        break;
+                    case "ArrowLeft":
+                        e.preventDefault();
+                        rotateShip(-1); // Rotate Left
+                        break;
+                }
+            });
+
+            // *** CHANGED: Attached listener to canvas, not document ***
+            canvas.addEventListener('keyup', (e) => {
+                if (!simulationRunning || gamePaused) return;
+
+                if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    ship.isThrottling = false;
+                }
+            });
+
+            // Start the game
+            init();
+            gameLoop();
+        });
+    </script>
 </body>
 </html>
